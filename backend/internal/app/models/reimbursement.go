@@ -22,11 +22,13 @@ type Reimbursement struct {
 	Description string              `json:"description" gorm:"type:text"`
 	Amount      float64             `json:"amount" gorm:"type:decimal(10,2);not null"`
 	Status      ReimbursementStatus `json:"status" gorm:"type:varchar(20);not null;default:'pending'"`
+	ApprovedAt  time.Time          `json:"approved_at"`
 	CreatedAt   time.Time           `json:"created_at"`
 	UpdatedAt   time.Time           `json:"updated_at"`
-
-	// Relations
+	 ApprovedID  *uint      			`json:"approved_id" omitempty gorm:"default:0"` 
+	
 	User      User       `json:"user" gorm:"foreignKey:UserID"`
+	// ApprovedBy      User       `json:"approved_by" gorm:"foreignKey:ApprovedID"`
 	Approvals []Approval `json:"approvals" gorm:"foreignKey:ReimbursementID"`
 }
 
@@ -36,4 +38,21 @@ func (r *Reimbursement) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
+type ReimbursementResponse struct {
+    ID          uuid.UUID         `json:"id"`
+    Description string            `json:"description"`
+    Amount      float64           `json:"amount"`
+    Status      string            `json:"status"`
+    CreatedAt   time.Time         `json:"created_at"`
+    User        string            `json:"user"`
+    Approvals   []ApprovalResponse `json:"approvals"`
+}
 
+
+type ApprovalResponse struct {
+    ID        uuid.UUID `json:"id"`
+    Status    string    `json:"status"`
+    Notes     *string   `json:"notes,omitempty"` // Pastikan nama 'Notes' benar
+    CreatedAt time.Time `json:"created_at"`
+    Approver  string    `json:"approver"`
+}

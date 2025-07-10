@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"time"
 )
 
 type ReimbursementHandler struct {
@@ -42,6 +43,8 @@ func (h *ReimbursementHandler) CreateReimbursement(c *gin.Context) {
 		Title:       req.Title,
 		Description: req.Description,
 		Amount:      req.Amount,
+		ApprovedAt:  time.Now(),
+		ApprovedID:  nil,
 	}
 
 	if err := h.reimbursementService.CreateReimbursement(reimbursement); err != nil {
@@ -80,7 +83,6 @@ func (h *ReimbursementHandler) GetReimbursementByID(c *gin.Context) {
 		return
 	}
 
-	// Check if user can access this reimbursement
 	userID, _ := c.Get("user_id")
 	userRole, _ := c.Get("user_role")
 	
@@ -108,8 +110,61 @@ func (h *ReimbursementHandler) GetAllReimbursements(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	responseDTOs := make([]models.ReimbursementResponse, 0, len(reimbursements))
 
-	c.JSON(http.StatusOK, gin.H{"reimbursements": reimbursements})
+	// Iterasi setiap data dari database untuk ditransformasi ke format DTO
+	for _, r := range reimbursements {
+
+		// Bagian untuk memproses 'Approvals' (nested object)
+		approvalDTOs := make([]models.ApprovalResponse, 0, len(r.Approvals))
+		for _, a := range r.Approvals {
+			var approverName string
+			// SOLUSI UNTUK ERROR 'a.Approver != nil':
+			// Cek apakah ID Approver bukan zero value. Ini cara yang benar
+			// untuk struct non-pointer.
+			if a.Approver.ID != uuid.Nil {
+				approverName = a.Approver.Name
+			}
+
+			// Buat DTO untuk setiap approval
+			approvalDTO := models.ApprovalResponse{
+				ID:        a.ID,
+				// SOLUSI UNTUK ERROR 'cannot use a.Status':
+				// Lakukan konversi tipe eksplisit ke string.
+				Status:    string(a.Status),
+				CreatedAt: a.CreatedAt,
+				Approver:  approverName,
+				// SOLUSI UNTUK ERROR 'a.Notes undefined':
+				// Saya akan mengasumsikan tidak ada field 'Notes' untuk saat ini.
+				// Jika ada, tambahkan di sini (misal: Notes: a.Comment)
+			}
+			approvalDTOs = append(approvalDTOs, approvalDTO)
+		}
+
+		var userName string
+		// SOLUSI UNTUK ERROR 'r.User != nil':
+		// Cek apakah ID User bukan zero value.
+		if r.User.ID != uuid.Nil {
+			userName = r.User.Name
+		}
+
+		// Buat DTO utama untuk reimbursement
+		dto := models.ReimbursementResponse{
+			ID:          r.ID,
+			Description: r.Description,
+			Amount:      r.Amount,
+		
+			Status:      string(r.Status),
+			CreatedAt:   r.CreatedAt,
+			User:        userName,
+			Approvals:   approvalDTOs,
+		}
+		responseDTOs = append(responseDTOs, dto)
+	}
+
+	// Kirim hasil akhir yang sudah diformat
+	c.JSON(http.StatusOK, responseDTOs)
+	// c.JSON(http.StatusOK, gin.H{"reimbursements": reimbursements})
 }
 
 func (h *ReimbursementHandler) ApproveReimbursement(c *gin.Context) {

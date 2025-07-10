@@ -53,6 +53,7 @@ func (r *reimbursementRepository) GetPending() ([]models.Reimbursement, error) {
 func (r *reimbursementRepository) GetAll() ([]models.Reimbursement, error) {
 	var reimbursements []models.Reimbursement
 	err := r.db.Preload("User").Preload("Approvals").Preload("Approvals.Approver").Find(&reimbursements).Error
+	
 	return reimbursements, err
 }
 
