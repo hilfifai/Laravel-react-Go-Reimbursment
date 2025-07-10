@@ -33,15 +33,23 @@ func main() {
 		log.Fatal("Failed to run migrations:", err)
 	}
 
-	// Setup router
+	// Setup router terlebih dahulu
 	r := router.Setup(db)
+
+	// Tambahkan middleware CORS
+	allowedOrigins := []string{
+		"http://localhost:81",
+		"http://127.0.0.1:81",
+		"http://localhost:8000",
+	}
+	r.Use(router.NewCORSMiddleware(allowedOrigins))
 
 	// Set Gin mode
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Start server
+	// Get port
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8585"
@@ -52,4 +60,3 @@ func main() {
 		log.Fatal("Failed to start server:", err)
 	}
 }
-

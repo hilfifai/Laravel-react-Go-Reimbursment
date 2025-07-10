@@ -13,28 +13,22 @@ import (
 func Setup(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
-	// Load config
 	cfg := config.Load()
-
-	// Add CORS middleware
+	
 	r.Use(CORSMiddleware())
 
-	// Initialize repositories
 	userRepo := repositories.NewUserRepository(db)
 	reimbursementRepo := repositories.NewReimbursementRepository(db)
 	approvalRepo := repositories.NewApprovalRepository(db)
 
-	// Initialize services
 	authService := services.NewAuthService(userRepo, cfg.JWTSecret)
 	reimbursementService := services.NewReimbursementService(reimbursementRepo, approvalRepo)
 	userService := services.NewUserService(userRepo)
 
-	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	reimbursementHandler := handlers.NewReimbursementHandler(reimbursementService)
 	userHandler := handlers.NewUserHandler(userService)
 
-	// Public routes
 	api := r.Group("/api/v1")
 	{
 		auth := api.Group("/auth")
@@ -44,11 +38,9 @@ func Setup(db *gorm.DB) *gin.Engine {
 		}
 	}
 
-	// Protected routes
 	protected := api.Group("/")
 	protected.Use(AuthMiddleware(cfg.JWTSecret))
 	{
-		// Employee routes
 		reimbursements := protected.Group("/reimbursements")
 		{
 			reimbursements.POST("", reimbursementHandler.CreateReimbursement)
@@ -56,7 +48,6 @@ func Setup(db *gorm.DB) *gin.Engine {
 			reimbursements.GET("/:id", reimbursementHandler.GetReimbursementByID)
 		}
 
-		// Manager routes
 		manager := protected.Group("/")
 		manager.Use(RoleMiddleware("manager", "admin"))
 		{
@@ -65,7 +56,6 @@ func Setup(db *gorm.DB) *gin.Engine {
 			manager.PUT("/reimbursements/:id/reject", reimbursementHandler.RejectReimbursement)
 		}
 
-		// Admin routes
 		admin := protected.Group("/")
 		admin.Use(RoleMiddleware("admin"))
 		{
