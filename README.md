@@ -5,7 +5,7 @@ Sistem reimbursement dengan arsitektur Golang backend dan Laravel frontend SPA y
 ## Arsitektur
 
 - **Backend**: Golang dengan Gin framework
-- **Frontend**: Laravel SPA dengan React
+- **Frontend**: Laravel SPA 
 - **Database**: PostgreSQL
 - **Autentikasi**: JWT (JSON Web Token)
 
