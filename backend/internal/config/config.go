@@ -12,7 +12,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@localhost/reimbursement_db?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
 		JWTSecret:   getEnv("JWT_SECRET", "your-secret-key"),
 		Environment: getEnv("ENVIRONMENT", "development"),
 	}
